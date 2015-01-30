@@ -113,6 +113,8 @@
 #define CONFIG_AUTO_COMPLETE
 #define CONFIG_CMDLINE_EDITING
 #define CONFIG_VERSION_VARIABLE
+#define CONFIG_API
+#define CONFIG_SYS_MMC_MAX_DEVICE 2
 
 /* We set the max number of command args high to avoid HUSH bugs. */
 #define CONFIG_SYS_MAXARGS		64

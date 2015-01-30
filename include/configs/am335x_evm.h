@@ -55,6 +55,7 @@
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x80200000\0" \
+	"kloadaddr=0x80007fc0\0" \
 	"fdtaddr=0x80F80000\0" \
 	"fdt_high=0xffffffff\0" \
 	"boot_fdt=try\0" \
@@ -163,6 +164,7 @@
 #endif
 
 #define CONFIG_BOOTCOMMAND \
+	"i2c mw 0x24 1 0x3e; " \
 	"run findfdt; " \
 	"run mmcboot;" \
 	"setenv mmcdev 1; " \

@@ -379,7 +379,11 @@ void enable_board_pin_mux(struct am335x_baseboard_id *header)
 		configure_module_pin_mux(mmc0_pin_mux);
 		configure_module_pin_mux(mmc1_pin_mux);
 	} else {
-		puts("Unknown board, cannot configure pinmux.");
-		hang();
+		puts("Unknown board, assuming Beaglebone LT/Black.");
+		/* Beaglebone LT pinmux */
+		configure_module_pin_mux(i2c1_pin_mux);
+		configure_module_pin_mux(mii1_pin_mux);
+		configure_module_pin_mux(mmc0_pin_mux);
+		configure_module_pin_mux(mmc1_pin_mux);
 	}
 }
