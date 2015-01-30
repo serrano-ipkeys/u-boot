@@ -39,6 +39,11 @@ static inline int board_is_bone_lt(struct am335x_baseboard_id *header)
 	return !strncmp(header->name, "A335BNLT", HDR_NAME_LEN);
 }
 
+static inline int board_is_ipkeys(struct am335x_baseboard_id *header)
+{
+	return !strncmp(header->name, "A335IPKY", HDR_NAME_LEN);
+}
+
 static inline int board_is_evm_sk(struct am335x_baseboard_id *header)
 {
 	return !strncmp("A335X_SK", header->name, HDR_NAME_LEN);

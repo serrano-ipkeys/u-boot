@@ -40,14 +40,28 @@ DECLARE_GLOBAL_DATA_PTR;
 static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
 
 /*
+ * Configure setup for IP Keys AM3352 Relay control board
+ */
+static void set_ipkeys_am3552( struct am335x_baseboard_id *header)
+{
+	memset( header, 0, sizeof(*header));
+	header->magic = 0xEE3355AA;
+	strncpy(header->name, "A335IPKY", HDR_NAME_LEN);
+	strncpy(header->version, "00A6", 4);
+}
+
+/*
  * Read header information from EEPROM into global structure.
  */
 static int read_eeprom(struct am335x_baseboard_id *header)
 {
 	/* Check if baseboard eeprom is available */
 	if (i2c_probe(CONFIG_SYS_I2C_EEPROM_ADDR)) {
-		puts("Could not probe the EEPROM; something fundamentally "
-			"wrong on the I2C bus.\n");
+		// nriedel - patch for IPKeys board which has no eeprom
+//		puts("Could not probe the EEPROM; something fundamentally "
+//			"wrong on the I2C bus.\n");
+		puts("Could not probe the EEPROM; Assuming IP Keys AM3352 Relay Control\n");
+		set_ipkeys_am3552( header);
 		return -ENODEV;
 	}
 
@@ -242,7 +256,7 @@ void am33xx_spl_board_init(void)
 	/* Get the frequency */
 	dpll_mpu_opp100.m = am335x_get_efuse_mpu_max_freq(cdev);
 
-	if (board_is_bone(&header) || board_is_bone_lt(&header)) {
+	if (board_is_bone(&header) || board_is_bone_lt(&header) || board_is_ipkeys(&header)) {
 		/* BeagleBone PMIC Code */
 		int usb_cur_lim;
 
@@ -283,6 +297,12 @@ void am33xx_spl_board_init(void)
 		 * Increase USB current limit to 1300mA or 1800mA and set
 		 * the MPU voltage controller as needed.
 		 */
+		// nriedel - set mpu_vdd to 1.125V for IP Keys board
+		if( board_is_ipkeys(&header) ) {
+			puts("setting mpu_vdd to 1.125V for IP Keys\n");
+			usb_cur_lim = TPS65217_USB_INPUT_CUR_LIMIT_1300MA;
+			mpu_vdd = TPS65217_DCDC_VOLT_SEL_1125MV;
+		}
 		if (dpll_mpu_opp100.m == MPUPLL_M_1000) {
 			usb_cur_lim = TPS65217_USB_INPUT_CUR_LIMIT_1800MA;
 			mpu_vdd = TPS65217_DCDC_VOLT_SEL_1325MV;
@@ -308,6 +328,11 @@ void am33xx_spl_board_init(void)
 		do_setup_dpll(&dpll_core_regs, &dpll_core_opp100);
 
 		/* Set DCDC2 (MPU) voltage */
+		if( board_is_ipkeys(&header) )		// nriedel for test
+		{
+			puts( "skipping set of DCDC2 for IP Keys board\n");
+		}
+		else
 		if (tps65217_voltage_update(TPS65217_DEFDCDC2, mpu_vdd)) {
 			puts("tps65217_voltage_update failure\n");
 			return;
@@ -315,7 +340,7 @@ void am33xx_spl_board_init(void)
 
 		/*
 		 * Set LDO3, LDO4 output voltage to 3.3V for Beaglebone.
-		 * Set LDO3 to 1.8V and LDO4 to 3.3V for Beaglebone Black.
+		 * Set LDO3 to 1.8V and LDO4 to 3.3V for Beaglebone Black (or IP Keys).
 		 */
 		if (board_is_bone(&header)) {
 			if (tps65217_reg_write(TPS65217_PROT_LEVEL_2,
@@ -388,6 +413,8 @@ const struct dpll_params *get_dpll_ddr_params(void)
 		return &dpll_ddr_evm_sk;
 	else if (board_is_bone_lt(&header))
 		return &dpll_ddr_bone_black;
+	else if (board_is_ipkeys(&header))
+		return &dpll_ddr_bone_black;				// nriedel IP keys same as bone black
 	else if (board_is_evm_15_or_later(&header))
 		return &dpll_ddr_evm_sk;
 	else
@@ -477,7 +504,7 @@ void sdram_init(void)
 	if (board_is_evm_sk(&header))
 		config_ddr(303, &ioregs_evmsk, &ddr3_data,
 			   &ddr3_cmd_ctrl_data, &ddr3_emif_reg_data, 0);
-	else if (board_is_bone_lt(&header) && !board_is_bone(&header))
+	else if ((board_is_bone_lt(&header) || board_is_ipkeys(&header)) && !board_is_bone(&header))
 		config_ddr(400, &ioregs_bonelt,
 			   &ddr3_beagleblack_data,
 			   &ddr3_beagleblack_cmd_ctrl_data,
@@ -605,7 +632,7 @@ int board_eth_init(bd_t *bis)
 	if (read_eeprom(&header) < 0)
 		puts("Could not get board ID.\n");
 
-	if (board_is_bone(&header) || board_is_bone_lt(&header) ||
+	if (board_is_bone(&header) || board_is_bone_lt(&header) || board_is_ipkeys(&header) ||
 	    board_is_idk(&header)) {
 		writel(MII_MODE_ENABLE, &cdev->miisel);
 		cpsw_slaves[0].phy_if = cpsw_slaves[1].phy_if =

@@ -14,6 +14,14 @@ documented in TI's reference designs:
 - Beaglebone White
 - Beaglebone Black
 
+Modifications (12 Dec 2014) to support IP Keys Relay Control Card
+	Assumes this card if no EEPROM found.
+	Mostly the same as Beaglebone Black, except
+		MPU Vdd set to 1.275V instead of 1.325
+        CPU Freq is set to correspond to efuse max setting.  BBB uses 1GHz
+		   regardless of the efuse setting
+		
+
 Customization
 =============
 
